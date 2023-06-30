@@ -43,6 +43,8 @@ class Application(object):
         self.first_wn_number = {}
         self.second_wn_number = {}
 
+        self.last_event = datetime.datetime.now()
+
     def FrameCapturedCallback(self, hVideoCapture: int, hFrame: int,
                               customObject: int):
 
@@ -73,12 +75,13 @@ class Application(object):
             counter_list = Counter(self.wn_texts[ip])
             common_wn_number = counter_list.most_common(1)[0][0]
 
-            img = self.packages[ip]['frame']
-            wn_img = self.packages[ip]['lp_img']
-            retval, img_buffer = cv2.imencode('.jpg', img)
-            img_b64 = base64.b64encode(img_buffer).decode('utf-8')
-            retval, img_buffer = cv2.imencode('.jpg', wn_img)
-            lp_img_b64 = base64.b64encode(img_buffer).decode('utf-8')
+            frame_img = self.packages[ip]['frame']
+            wn_img = self.packages[ip]['wn_img']
+            wn_rect = self.packages[ip]['wn_rect']
+            retval, frame_img_buffer = cv2.imencode('.jpg', frame_img)
+            frame_img_b64 = base64.b64encode(frame_img_buffer).decode('utf-8')
+            retval, wn_img_buffer = cv2.imencode('.jpg', wn_img)
+            wn_img_b64 = base64.b64encode(wn_img_buffer).decode('utf-8')
             direction_to = utils.sending_direction(common_wn_number,
                                                    self.first_wn_number,
                                                    self.second_wn_number)
@@ -86,8 +89,9 @@ class Application(object):
                 'ip_address': ip,
                 'event_time': str(datetime.datetime.now()).split('.')[0],
                 'car_number': common_wn_number,
-                'car_picture': img_b64,
-                'lp_picture': lp_img_b64,
+                'car_picture': frame_img_b64,
+                'wn_picture': wn_img_b64,
+                'wn_rect': wn_rect,
                 'direction': direction_to
             }
             try:
@@ -97,9 +101,13 @@ class Application(object):
                       str(datetime.datetime.now()).split('.')[0],
                       r.status_code, r.text, ip, common_wn_number,
                       direction_to)
+
                 self.wn_texts[ip] = list(
                     filter(lambda number: number != common_wn_number,
                            self.wn_texts[ip]))
+
+                self.last_event = datetime.datetime.now()
+
             except Exception as e:
                 print(ip, 'Error in post request:', e)
         else:
@@ -202,15 +210,19 @@ class Application(object):
                 cv2.putText(frame, wagonNumberText.value.decode(), (20, 60),
                             font, 2, (0, 0, 255), 3, cv2.LINE_AA)
                 cv2.imshow(self.camera_ip + "_res", frame)
-                cv2.imshow(self.camera_ip + "_lp", wn_img)
+                cv2.imshow(self.camera_ip + "_wn", wn_img)
                 k = cv2.waitKey(1)
                 if k == 27:
                     exit()
 
+            if utils.old_data(self.last_event):
+                self.wn_texts[self.camera_ip] = []
+                self.packages[self.camera_ip] = {}
+
             self.wn_texts[self.camera_ip].append(wagon_label)
             self.packages[self.camera_ip]['frame'] = frame
-            self.packages[self.camera_ip]['lp_img'] = wn_img
-            self.packages[self.camera_ip]['lp_rect'] = [x, y, w, h]
+            self.packages[self.camera_ip]['wn_img'] = wn_img
+            self.packages[self.camera_ip]['wn_rect'] = [x, y, w, h]
 
             utils.collect_wn_coordinates(centers, wagon_label,
                                          self.first_wn_number,

@@ -1,3 +1,4 @@
+import datetime
 from collections import Counter
 
 import cv2
@@ -24,7 +25,6 @@ def calculat_wn_center(x: int, y: int, w: int, h: int) -> int:
 
 
 def convert_img(frame: Image) -> np.ndarray:
-
     # Convert Pillow Image to NumPy array
     frame = np.array(frame)
 
@@ -111,3 +111,11 @@ def collect_wn_coordinates(coordinate: tuple, wn_number: str,
         else:
             second_wn_number[wn_number]['coordinates'] += [coordinate]
         return False
+
+
+def old_data(last_event: datetime.datetime) -> bool:
+    current_time = datetime.datetime.now()
+    time_difference = current_time - last_event
+    if (time_difference.seconds // 60) % 60 >= constants.old_data_threshold:
+        return True
+    return False
