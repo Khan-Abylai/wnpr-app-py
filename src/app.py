@@ -217,7 +217,8 @@ class Application(object):
 
             if utils.old_data(self.last_event):
                 self.wn_texts[self.camera_ip] = []
-                self.packages[self.camera_ip] = {}
+                self.first_wn_number = {}
+                self.second_wn_number = {}
 
             self.wn_texts[self.camera_ip].append(wagon_label)
             self.packages[self.camera_ip]['frame'] = frame
