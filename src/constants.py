@@ -10,4 +10,6 @@ rec_threshold = 90
 
 wns_coordinates_threshold = 100
 
+old_data_threshold = 30  #min
+
 debug_mode = True
