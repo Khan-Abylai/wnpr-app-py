@@ -53,14 +53,6 @@ class Application(object):
         self.DTKWNR.WNREngine_PutFrame(c_void_p(hEngine), c_void_p(hFrame),
                                        c_uint64(0))
 
-    def FrameCapturedCallback(self, hVideoCapture: int, hFrame: int,
-                              customObject: int):
-
-        # print "Frame received"
-        hEngine = customObject
-        self.DTKWNR.WNREngine_PutFrame(c_void_p(hEngine), c_void_p(hFrame),
-                                       c_uint64(0))
-
     def CaptureErrorCallback(self, hVideoCapture, errorCode, customObject):
 
         if errorCode != 3:
