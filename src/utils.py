@@ -47,12 +47,11 @@ def check_license(ret: int):
 
 def determine_direction(wn_number: dict):
     num = wn_number['coordinates'][0][0] - wn_number['coordinates'][-1][0]
-    if num > 0:
-        wn_number['direction'] = 'forward'  # <-
-    elif num < 0:
-        wn_number['direction'] = 'reverse'  # ->
-    elif num == 0:
-        wn_number['direction'] = None  # stay
+    if abs(num) > constants.difference_coordinate:
+        if num > 0:
+            wn_number['direction'] = 'forward'  # <-
+        elif num < 0:
+            wn_number['direction'] = 'reverse'  # ->
     wn_number['coordinates'] = []
 
 

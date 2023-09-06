@@ -6,10 +6,12 @@ video_path = '/home/parqour/Documents/Jobs/wagon_recognition/DTKWNRSDK_Trial/vid
 
 wn_count = 5
 
+difference_coordinate = 10
+
 rec_threshold = 90
 
 wns_coordinates_threshold = 100
 
-old_data_threshold = 30  #min
+old_data_threshold = 10  #min
 
 debug_mode = False
