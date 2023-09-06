@@ -1,4 +1,5 @@
 import base64
+import logging
 import ctypes as c
 import datetime
 import os
@@ -14,7 +15,9 @@ from PIL import Image
 import src.constants as constants
 import src.utils as utils
 
-
+logging.basicConfig(filename='/home/parqour/wnpr_logs/wnprapp.log',
+                    level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s: %(message)s')
 class Application(object):
 
     def __init__(self, camera_ip, template_matching, server):
@@ -23,10 +26,10 @@ class Application(object):
             'PATH'] = constants.lib_path + os.pathsep + os.environ['PATH']
 
         # For camera
-        self.video_path = 'rtsp://admin:campas123.@{}/media/video1'.format(camera_ip)
+        #self.video_path = 'rtsp://admin:campas123.@{}/media/video1'.format(camera_ip)
 
         # For video
-        #self.video_path = constants.video_path
+        self.video_path = constants.video_path
 
         self.DTKWNR = cdll.LoadLibrary(constants.DTKWNRLib)
         self.DTKVID = cdll.LoadLibrary(constants.DTKVIDLib)
@@ -66,6 +69,7 @@ class Application(object):
 
             counter_list = Counter(self.wn_texts[ip])
             common_wn_number = counter_list.most_common(1)[0][0]
+            self.wn_texts[ip] = [item for item in self.wn_texts[ip] if item != common_wn_number]
 
             frame_img = self.packages[ip]['frame']
             wn_img = self.packages[ip]['wn_img']
@@ -77,6 +81,7 @@ class Application(object):
             direction_to = utils.sending_direction(common_wn_number,
                                                    self.first_wn_number,
                                                    self.second_wn_number)
+
             data = {
                 'ip_address': ip,
                 'event_time': str(datetime.datetime.now()).split('.')[0],
@@ -86,6 +91,10 @@ class Application(object):
                 'wn_rect': wn_rect,
                 'direction': direction_to
             }
+            print("sent",
+                  str(datetime.datetime.now()).split('.')[0],
+                  ip, common_wn_number,
+                  direction_to)
             try:
                 r = requests.post("http://" + self.server + ":8000/handle",
                                   data=data)
@@ -101,10 +110,11 @@ class Application(object):
                 self.last_event = datetime.datetime.now()
 
             except Exception as e:
-                print(ip, 'Error in post request:', e)
+                pass
+                #print(ip, 'Error in post request:', e)
         else:
             data = {"ip_address": ip}
-            print("----------------------------")
+            #print("----------------------------")
             try:
                 r = requests.post("http://" + self.server +
                                   ":8000/not_resolved",
@@ -112,7 +122,8 @@ class Application(object):
                 print("loop: sent ************************", r.status_code,
                       r.text, ip)
             except Exception as e:
-                print(ip, 'Error in post request:', e)
+                pass
+                #print(ip, 'Error in post request:', e)
 
     def WagonNumberDetectedCallback(self, hVideoCapture: int, hWagonNum: int):
 
