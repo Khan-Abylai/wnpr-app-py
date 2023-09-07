@@ -26,10 +26,10 @@ class Application(object):
             'PATH'] = constants.lib_path + os.pathsep + os.environ['PATH']
 
         # For camera
-        #self.video_path = 'rtsp://admin:campas123.@{}/media/video1'.format(camera_ip)
+        self.video_path = 'rtsp://admin:campas123.@{}/media/video0'.format(camera_ip)
 
         # For video
-        self.video_path = constants.video_path
+        #self.video_path = constants.video_path
 
         self.DTKWNR = cdll.LoadLibrary(constants.DTKWNRLib)
         self.DTKVID = cdll.LoadLibrary(constants.DTKVIDLib)
