@@ -26,10 +26,10 @@ class Application(object):
             'PATH'] = constants.lib_path + os.pathsep + os.environ['PATH']
 
         # For camera
-        #self.video_path = 'rtsp://admin:campas123.@{}/media/video1'.format(camera_ip)
+        self.video_path = 'rtsp://admin:campas123.@{}/media/video1'.format(camera_ip)
 
         # For video
-        self.video_path = constants.video_path
+        #self.video_path = constants.video_path
 
         self.DTKWNR = cdll.LoadLibrary(constants.DTKWNRLib)
         self.DTKVID = cdll.LoadLibrary(constants.DTKVIDLib)
@@ -98,10 +98,12 @@ class Application(object):
             try:
                 r = requests.post("http://" + self.server + ":8000/handle",
                                   data=data)
-                print("sent",
-                      str(datetime.datetime.now()).split('.')[0],
-                      r.status_code, r.text, ip, common_wn_number,
-                      direction_to)
+                # print("sent",
+                #       str(datetime.datetime.now()).split('.')[0],
+                #       r.status_code, r.text, ip, common_wn_number,
+                #       direction_to)
+                logging.info(
+                    f"Sent {datetime.datetime.now().split('.')[0]} {r.status_code} {r.text} {ip} {common_wn_number} {direction_to}")
 
                 self.wn_texts[ip] = list(
                     filter(lambda number: number != common_wn_number,
@@ -110,7 +112,7 @@ class Application(object):
                 self.last_event = datetime.datetime.now()
 
             except Exception as e:
-                pass
+                logging.error(f"{ip} Error in post request: {e}")
                 #print(ip, 'Error in post request:', e)
         else:
             data = {"ip_address": ip}
@@ -119,10 +121,11 @@ class Application(object):
                 r = requests.post("http://" + self.server +
                                   ":8000/not_resolved",
                                   data=data)
-                print("loop: sent ************************", r.status_code,
-                      r.text, ip)
+                # print("loop: sent ************************", r.status_code,
+                #       r.text, ip)
+                logging.info(f"Loop sent : {r.status_code} {r.text} {ip}")
             except Exception as e:
-                pass
+                logging.error(f"{ip} Error in post request: {e}")
                 #print(ip, 'Error in post request:', e)
 
     def WagonNumberDetectedCallback(self, hVideoCapture: int, hWagonNum: int):
@@ -305,6 +308,7 @@ class Application(object):
         self.DTKVID.VideoCapture_StartCaptureFromFile(hCpature, video_encode)
 
         print("Video started")
+        # logging.info("Video started")
 
         while not stopFlag:
             time.sleep(1)
