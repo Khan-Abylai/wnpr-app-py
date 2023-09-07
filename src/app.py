@@ -6,37 +6,36 @@ import os
 import time
 from collections import Counter
 from ctypes import *
-
 import cv2
 import numpy as np
-import requests
 from PIL import Image
+
+from threading import Thread
+import requests
 
 import src.constants as constants
 import src.utils as utils
+from src.logger_config import logger
 
-logging.basicConfig(filename='/home/parqour/wnpr_logs/wnprapp.log',
-                    level=logging.DEBUG,
-                    format='%(asctime)s %(levelname)s: %(message)s')
+
 class Application(object):
 
-    def __init__(self, camera_ip, template_matching, server):
+    def __init__(self, camera_ip, template_matching, package_sender):
 
         os.environ[
             'PATH'] = constants.lib_path + os.pathsep + os.environ['PATH']
 
         # For camera
-        self.video_path = 'rtsp://admin:campas123.@{}/media/video1'.format(camera_ip)
+        #self.video_path = 'rtsp://admin:campas123.@{}/media/video1'.format(camera_ip)
 
         # For video
-        #self.video_path = constants.video_path
+        self.video_path = constants.video_path
 
         self.DTKWNR = cdll.LoadLibrary(constants.DTKWNRLib)
         self.DTKVID = cdll.LoadLibrary(constants.DTKVIDLib)
 
         self.camera_ip = camera_ip
         self.template_matching = template_matching
-        self.server = server
 
         self.debug_mode = constants.debug_mode
 
@@ -47,6 +46,10 @@ class Application(object):
         self.second_wn_number = {}
 
         self.last_event = datetime.datetime.now()
+
+        self.sender = package_sender
+        self.thread = Thread(target=self.sender.run)
+        self.thread.start()
 
     def FrameCapturedCallback(self, hVideoCapture: int, hFrame: int,
                               customObject: int):
@@ -64,8 +67,7 @@ class Application(object):
         stopFlag = True
 
     def send_pkgs(self, ip: str):
-        if utils.check_wn_count_direction(self.first_wn_number,
-                                          self.second_wn_number):
+        if utils.check_wn_count_direction(self.first_wn_number, self.second_wn_number):
 
             counter_list = Counter(self.wn_texts[ip])
             common_wn_number = counter_list.most_common(1)[0][0]
@@ -73,60 +75,28 @@ class Application(object):
 
             frame_img = self.packages[ip]['frame']
             wn_img = self.packages[ip]['wn_img']
-            wn_rect = self.packages[ip]['wn_rect']
+            wn_rect = ', '.join(str(r) for r in self.packages[ip]['wn_rect'])
             retval, frame_img_buffer = cv2.imencode('.jpg', frame_img)
             frame_img_b64 = base64.b64encode(frame_img_buffer).decode('utf-8')
             retval, wn_img_buffer = cv2.imencode('.jpg', wn_img)
             wn_img_b64 = base64.b64encode(wn_img_buffer).decode('utf-8')
-            direction_to = utils.sending_direction(common_wn_number,
-                                                   self.first_wn_number,
-                                                   self.second_wn_number)
+            direction_to = utils.sending_direction(common_wn_number, self.first_wn_number, self.second_wn_number)
 
-            data = {
-                'ip_address': ip,
-                'event_time': str(datetime.datetime.now()).split('.')[0],
-                'car_number': common_wn_number,
-                'car_picture': frame_img_b64,
-                'wn_picture': wn_img_b64,
-                'wn_rect': wn_rect,
-                'direction': direction_to
-            }
-            print("sent",
-                  str(datetime.datetime.now()).split('.')[0],
-                  ip, common_wn_number,
-                  direction_to)
-            try:
-                r = requests.post("http://" + self.server + ":8000/handle",
-                                  data=data)
-                # print("sent",
-                #       str(datetime.datetime.now()).split('.')[0],
-                #       r.status_code, r.text, ip, common_wn_number,
-                #       direction_to)
-                logging.info(
-                    f"Sent {datetime.datetime.now().split('.')[0]} {r.status_code} {r.text} {ip} {common_wn_number} {direction_to}")
+            self.sender.add_package(ip, common_wn_number, frame_img_b64, wn_img_b64, wn_rect, direction_to)
 
-                self.wn_texts[ip] = list(
-                    filter(lambda number: number != common_wn_number,
-                           self.wn_texts[ip]))
-
-                self.last_event = datetime.datetime.now()
-
-            except Exception as e:
-                logging.error(f"{ip} Error in post request: {e}")
-                #print(ip, 'Error in post request:', e)
         else:
             data = {"ip_address": ip}
-            #print("----------------------------")
+            print("----------------------------")
             try:
-                r = requests.post("http://" + self.server +
-                                  ":8000/not_resolved",
-                                  data=data)
-                # print("loop: sent ************************", r.status_code,
-                #       r.text, ip)
-                logging.info(f"Loop sent : {r.status_code} {r.text} {ip}")
+                r = requests.post("http://" + self.server + ":8888/not_resolved", data=data)
+                print("loop: sent ************************", r.status_code, r.text, ip)
+                logger.info(f"Loop sent : {r.status_code} {r.text} {ip}")
             except Exception as e:
-                logging.error(f"{ip} Error in post request: {e}")
-                #print(ip, 'Error in post request:', e)
+                logger.error(f"{ip} Error in post request: {e}")
+                print(ip, 'Error in post request:', e)
+
+    def shutdown(self):
+        self.sender.shutdown()
 
     def WagonNumberDetectedCallback(self, hVideoCapture: int, hWagonNum: int):
 
@@ -308,10 +278,13 @@ class Application(object):
         self.DTKVID.VideoCapture_StartCaptureFromFile(hCpature, video_encode)
 
         print("Video started")
-        # logging.info("Video started")
+        logger.info("Video started")
 
         while not stopFlag:
             time.sleep(1)
+
+        # Shutdown the package sender thread
+        self.shutdown()
 
         # stop capture
         self.DTKVID.VideoCapture_StopCapture(hCpature)
