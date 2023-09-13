@@ -25,12 +25,8 @@ def calculat_wn_center(x: int, y: int, w: int, h: int) -> int:
 
 
 def convert_img(frame: Image) -> np.ndarray:
-    # Convert Pillow Image to NumPy array
     frame = np.array(frame)
-
-    # Convert RGB image to BGR
     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-
     return frame
 
 
@@ -45,71 +41,72 @@ def check_license(ret: int):
         exit()
 
 
-def determine_direction(wn_number: dict):
-    num = wn_number['coordinates'][0][0] - wn_number['coordinates'][-1][0]
-    if abs(num) > constants.difference_coordinate:
+def determine_direction(number_data: dict):  # Определяет направление
+    """
+    Определяет направление.
+    """
+    num = number_data['coordinates'][0][0] - number_data['coordinates'][-1][0]
+    if abs(num) > constants.direction_threshold:
         if num > 0:
-            wn_number['direction'] = 'forward'  # <-
+            number_data['direction'] = 'forward'  # <-
         elif num < 0:
-            wn_number['direction'] = 'reverse'  # ->
-    wn_number['coordinates'] = []
+            number_data['direction'] = 'reverse'  # ->
 
 
-def check_wn_count_direction(
-        first_wn_number: dict,
-        second_wn_number: dict) -> bool:  # проверка к отправке
-    for wn_number in first_wn_number:
-        if len(first_wn_number[wn_number]
-               ['coordinates']) >= constants.wn_count or len(
-                   second_wn_number[wn_number]
-                   ['coordinates']) >= constants.wn_count:
-            first_wn_number = first_wn_number[wn_number]
-            second_wn_number = second_wn_number[wn_number]
+def check_wn_count_direction(wn_data: dict) -> bool:  # проверка к отправке
+    """
+    Проверяет направление и сбрасывает счетчик.
+    """
+    for wn_number in wn_data:
+        number_data = wn_data[wn_number]
 
-            if len(first_wn_number['coordinates']) >= constants.wn_count:
-                determine_direction(first_wn_number)
-
-            elif len(second_wn_number['coordinates']) >= constants.wn_count:
-                first_wn_number['coordinates'] = []
-                first_wn_number['coordinates'] = second_wn_number[
-                    'coordinates'].copy()
-                determine_direction(first_wn_number)
-                second_wn_number['coordinates'] = []
-
+        if number_data['wn_count'] >= constants.wn_count:
+            determine_direction(number_data)
+            number_coordinate = number_data['coordinates'][-1]
+            number_data.update({
+                    'coordinates': [number_coordinate, number_coordinate],
+                    'wn_count': 1
+                })
             return True
+    return False
 
 
-def sending_direction(wn_number: str, first_wn_number: dict,
-                      second_wn_number: dict) -> str:  # отправка направление
-    direction = first_wn_number[wn_number]['direction']
-    for index, keys_wn_number in enumerate(first_wn_number.copy()):
+def sending_direction(wn_number: str, wn_data: dict) -> str:  # отправка направление
+    """
+    Отправляет направление и очищает старые данные.
+    """
+    direction = wn_data[wn_number]['direction']
+    index_limit = len(wn_data) - constants.wn_count - 1
+
+    for index, keys_wn_number in enumerate(wn_data.copy()):
         if keys_wn_number == wn_number: break
-        if len(first_wn_number) - constants.wn_count - 1 == index:
-            first_wn_number.pop(keys_wn_number)
-            second_wn_number.pop(keys_wn_number)
+        if index_limit >= index:
+            wn_data.pop(keys_wn_number)
 
     return direction
 
 
 def collect_wn_coordinates(coordinate: tuple, wn_number: str,
-                           first_wn_number: dict,
-                           second_wn_number: dict) -> bool:
-    if first_wn_number.get(wn_number, True) == True:
-        first_wn_number[wn_number] = {
-            'coordinates': [coordinate],
-            'direction': None,
-            'past_coordinate': coordinate
+                           wn_data: dict) -> bool:
+    """
+    Собирает координаты и обновляет счетчик.
+    """
+    if wn_number not in wn_data:
+        wn_data[wn_number] = {
+            'coordinates': [coordinate, coordinate], # [first, last]
+            'wn_count': 1, 'direction': None
         }
-        second_wn_number[wn_number] = {'coordinates': []}
         return True
-    else:
-        if abs(first_wn_number[wn_number]['past_coordinate'][1] -
-               coordinate[1]) < constants.wns_coordinates_threshold:
-            first_wn_number[wn_number]['coordinates'] += [coordinate]
-            first_wn_number[wn_number]['past_coordinate'] = coordinate
-        else:
-            second_wn_number[wn_number]['coordinates'] += [coordinate]
-        return False
+
+    last_coordinate = wn_data[wn_number]['coordinates'][-1]
+    difference_y = abs(last_coordinate[1] - coordinate[1])
+    difference_x = abs(last_coordinate[0] - coordinate[0])
+
+    if (difference_y < constants.select_wn_threshold and
+            difference_x < constants.select_wn_threshold):
+        wn_data[wn_number]['wn_count'] += 1
+        wn_data[wn_number]['coordinates'][-1] = coordinate
+    return False
 
 
 def old_data(last_event: datetime.datetime) -> bool:

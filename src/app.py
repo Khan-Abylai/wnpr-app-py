@@ -42,8 +42,7 @@ class Application(object):
         self.wn_texts = {self.camera_ip: []}
         self.packages = {self.camera_ip: {}}
 
-        self.first_wn_number = {}
-        self.second_wn_number = {}
+        self.wn_data = {}
 
         self.last_event = datetime.datetime.now()
 
@@ -67,7 +66,7 @@ class Application(object):
         stopFlag = True
 
     def send_pkgs(self, ip: str):
-        if utils.check_wn_count_direction(self.first_wn_number, self.second_wn_number):
+        if utils.check_wn_count_direction(self.wn_data):  #, self.second_wn_number):
 
             counter_list = Counter(self.wn_texts[ip])
             common_wn_number = counter_list.most_common(1)[0][0]
@@ -80,20 +79,9 @@ class Application(object):
             frame_img_b64 = base64.b64encode(frame_img_buffer).decode('utf-8')
             retval, wn_img_buffer = cv2.imencode('.jpg', wn_img)
             wn_img_b64 = base64.b64encode(wn_img_buffer).decode('utf-8')
-            direction_to = utils.sending_direction(common_wn_number, self.first_wn_number, self.second_wn_number)
+            direction_to = utils.sending_direction(common_wn_number, self.wn_data)
 
             self.sender.add_package(ip, common_wn_number, frame_img_b64, wn_img_b64, wn_rect, direction_to)
-
-        else:
-            data = {"ip_address": ip}
-            print("----------------------------")
-            try:
-                r = requests.post("http://" + self.server + ":8888/not_resolved", data=data)
-                print("loop: sent ************************", r.status_code, r.text, ip)
-                logger.info(f"Loop sent : {r.status_code} {r.text} {ip}")
-            except Exception as e:
-                logger.error(f"{ip} Error in post request: {e}")
-                print(ip, 'Error in post request:', e)
 
     def shutdown(self):
         self.sender.shutdown()
@@ -193,8 +181,7 @@ class Application(object):
 
             if utils.old_data(self.last_event):
                 self.wn_texts[self.camera_ip] = []
-                self.first_wn_number = {}
-                self.second_wn_number = {}
+                self.wn_data = {}
 
             self.wn_texts[self.camera_ip].append(wagon_label)
             self.packages[self.camera_ip]['frame'] = frame
@@ -202,11 +189,13 @@ class Application(object):
             self.packages[self.camera_ip]['wn_rect'] = [x, y, w, h]
 
             utils.collect_wn_coordinates(centers, wagon_label,
-                                         self.first_wn_number,
-                                         self.second_wn_number)
+                                         self.wn_data)
 
             if utils.check_count_wn(self.wn_texts[self.camera_ip]):
                 self.send_pkgs(self.camera_ip)
+
+        # destoy WagonNumber object
+        self.DTKWNR.WagonNumber_Destroy(c_void_p(hWagonNum))
 
     def run(self):
 
