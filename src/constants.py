@@ -1,8 +1,8 @@
-lib_path = '/home/parqour/DTKWNRSDK/lib/linux/x86_64/'
+lib_path = './DTKWNRSDK/'
 DTKWNRLib = 'libDTKWNR.so'
 DTKVIDLib = 'libDTKVID.so'
 
-logging_filename = '/home/parqour/wnpr_logs/wnprapp.log'
+logging_filename = './wnpr_logs/wnprapp.log'
 
 video_path = '/home/parqour/DTKWNRSDK/video/full_video_test_3.mp4'
 

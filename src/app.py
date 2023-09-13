@@ -266,7 +266,6 @@ class Application(object):
 
         self.DTKVID.VideoCapture_StartCaptureFromFile(hCpature, video_encode)
 
-        print("Video started")
         logger.info("Video started")
 
         while not stopFlag:

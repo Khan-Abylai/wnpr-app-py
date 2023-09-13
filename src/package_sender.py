@@ -22,7 +22,6 @@ class PackageSender:
                 continue
             response = self.send_request_async(package)
             logger.info("sent %s %s %s %s %s", response.status_code, response.text, package['ip_address'], package['car_number'], package['direction'])
-            print("sent", response.status_code, response.text, package['ip_address'], package['car_number'], package['direction'])
 
 
     def shutdown(self):
