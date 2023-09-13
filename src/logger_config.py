@@ -1,6 +1,7 @@
 import logging
+import src.constants as constants
 
-logging.basicConfig(filename='/home/parqour/wnpr_logs/wnprapp.log',
+logging.basicConfig(filename=constants.logging_filename,
                     level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s: %(message)s')
 
