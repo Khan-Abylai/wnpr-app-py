@@ -6,12 +6,12 @@ logging_filename = './wnpr_logs/wnprapp.log'
 
 video_path = '/home/parqour/DTKWNRSDK/video/full_video_test_3.mp4'
 
-wn_count = 30
+wn_count = 15
 
 direction_threshold = 10
 select_wn_threshold = 100
 
-rec_threshold = 80
+rec_threshold = 70
 
 old_data_threshold = 10  #min
 
