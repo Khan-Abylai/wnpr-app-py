@@ -26,7 +26,7 @@ class Application(object):
             'PATH'] = constants.lib_path + os.pathsep + os.environ['PATH']
 
         # For camera
-        self.video_path = 'rtsp://admin:campas123.@{}/media/video0'.format(camera_ip)
+        self.video_path = 'rtsp://admin:campas123.@{}/media/video1'.format(camera_ip)
 
         # For video
         #self.video_path = constants.video_path
@@ -264,7 +264,11 @@ class Application(object):
 
         video_encode = self.video_path.encode('utf-8')
 
-        self.DTKVID.VideoCapture_StartCaptureFromFile(hCpature, video_encode)
+        #For test video
+        #self.DTKVID.VideoCapture_StartCaptureFromFile(hCpature, video_encode)
+
+        # for camera
+        self.DTKVID.VideoCapture_StartCaptureFromIPCamera(hCpature, video_encode)
 
         logger.info("Video started")
 
