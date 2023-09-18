@@ -41,48 +41,43 @@ def check_license(ret: int):
         exit()
 
 
-def determine_direction(number_data: dict):  # Определяет направление
+def determine_direction(number_data: dict):
     """
-    Определяет направление.
+    Определяет направление и сбрасывает счетчик.
     """
     num = number_data['coordinates'][0][0] - number_data['coordinates'][-1][0]
-    if abs(num) > constants.direction_threshold:
+    if (abs(num) > constants.direction_threshold or
+            number_data['direction'] is None):
         if num > 0:
             number_data['direction'] = 'forward'  # <-
         elif num < 0:
             number_data['direction'] = 'reverse'  # ->
 
+        number_coordinate = number_data['coordinates'][-1]
+        number_data.update({
+            'coordinates': [number_coordinate, number_coordinate]
+        })
+    number_data.update({'wn_count': 1})
+
 
 def check_wn_count_direction(wn_data: dict) -> bool:  # проверка к отправке
     """
-    Проверяет направление и сбрасывает счетчик.
+    Проверяет направление.
     """
     for wn_number in wn_data:
         number_data = wn_data[wn_number]
 
         if number_data['wn_count'] >= constants.wn_count:
             determine_direction(number_data)
-            number_coordinate = number_data['coordinates'][-1]
-            number_data.update({
-                    'coordinates': [number_coordinate, number_coordinate],
-                    'wn_count': 1
-                })
             return True
     return False
 
 
 def sending_direction(wn_number: str, wn_data: dict) -> str:  # отправка направление
     """
-    Отправляет направление и очищает старые данные.
+    Отправляет направление.
     """
     direction = wn_data[wn_number]['direction']
-    index_limit = len(wn_data) - constants.wn_count - 1
-
-    for index, keys_wn_number in enumerate(wn_data.copy()):
-        if keys_wn_number == wn_number: break
-        if index_limit >= index:
-            wn_data.pop(keys_wn_number)
-
     return direction
 
 

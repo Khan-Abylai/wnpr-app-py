@@ -66,7 +66,7 @@ class Application(object):
         stopFlag = True
 
     def send_pkgs(self, ip: str):
-        if utils.check_wn_count_direction(self.wn_data):  #, self.second_wn_number):
+        if utils.check_wn_count_direction(self.wn_data):
 
             counter_list = Counter(self.wn_texts[ip])
             common_wn_number = counter_list.most_common(1)[0][0]
@@ -179,10 +179,6 @@ class Application(object):
                 if k == 27:
                     exit()
 
-            if utils.old_data(self.last_event):
-                self.wn_texts[self.camera_ip] = []
-                self.wn_data = {}
-
             self.wn_texts[self.camera_ip].append(wagon_label)
             self.packages[self.camera_ip]['frame'] = frame
             self.packages[self.camera_ip]['wn_img'] = wn_img
@@ -193,6 +189,13 @@ class Application(object):
 
             if utils.check_count_wn(self.wn_texts[self.camera_ip]):
                 self.send_pkgs(self.camera_ip)
+
+            self.last_event = datetime.datetime.now()
+
+        if utils.old_data(self.last_event):
+            self.last_event = datetime.datetime.now()
+            self.wn_texts[self.camera_ip] = []
+            self.wn_data = {}
 
         # destoy WagonNumber object
         self.DTKWNR.WagonNumber_Destroy(c_void_p(hWagonNum))

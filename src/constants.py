@@ -11,7 +11,7 @@ wn_count = 15
 direction_threshold = 10
 select_wn_threshold = 100
 
-rec_threshold = 70
+rec_threshold = 80
 
 old_data_threshold = 10  #min
 
