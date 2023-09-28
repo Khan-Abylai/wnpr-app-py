@@ -1,15 +1,18 @@
-lib_path = '/home/parqour/Documents/Jobs/wagon_recognition/DTKWNRSDK_Trial/lib/linux/x86_64/'
+lib_path = './DTKWNRSDK/'
 DTKWNRLib = 'libDTKWNR.so'
 DTKVIDLib = 'libDTKVID.so'
 
-video_path = '/home/parqour/Documents/Jobs/wagon_recognition/DTKWNRSDK_Trial/video/sample.mp4'
+logging_filename = './wnpr_logs/wnprapp.log'
 
-wn_count = 5
+video_path = '/home/parqour/DTKWNRSDK/video/full_video_test_3.mp4'
 
-rec_threshold = 90
+wn_count = 15
 
-wns_coordinates_threshold = 100
+direction_threshold = 10
+select_wn_threshold = 100
 
-old_data_threshold = 30  #min
+rec_threshold = 80
 
-debug_mode = True
+old_data_threshold = 10  #min
+
+debug_mode = False
